@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	csvFile, errOpen1 := os.Open("data.csv")
+	csvFile, errOpen1 := os.Open("testdata.csv")
 	defer func() {
 		csvFile.Close()
 	}()
@@ -70,7 +70,7 @@ func WriteBody(file *os.File, data []byte) {
 			file.WriteString("<td>")
 			t := 0
 			// разделение по запятым могло разделить данные, заключенные в кавычки
-			if tds[k][0] == '"' && lastSymbol(tds[k]) != '"' && columnsAvailable != len(tds[k]) {
+			if columnsAvailable != len(tds) && tds[k][0] == '"' && lastSymbol(tds[k]) != '"' {
 				// склеиваем строки, пока не найдем ту, которая заканчивается кавычками
 				t = k + 1
 				for t < len(tds) && lastSymbol(tds[t]) != '"' && columnsAvailable > len(tds)-t {
