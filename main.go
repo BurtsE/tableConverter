@@ -58,29 +58,33 @@ func WriteBody(file *os.File, data []byte) {
 
 	columnsNum := len(ths)
 	/*
-		Переменная columnsNum нужна далее для определения валидности склейки строк,
-		предполагаем, что названия колонок написаны без ошибок и спецсимволов
+		Переменная columnsNum нужна далее для определения валидности склейки строк.
+		Предполагаем, что названия колонок написаны без ошибок и спецсимволов
 	*/
 	for i := 1; i < len(rows)-1; i++ {
 		tds := strings.Split(rows[i], ",")
-
+		columnsAvailable := columnsNum
 		file.WriteString("\t<tr>")
 		for k := 0; k < len(tds); k++ {
 			td := tds[k]
 			file.WriteString("<td>")
-			// разделение по запятым могло разделить данные, заключенные в кавычки
 			t := 0
-			if tds[k][0] == '"' && lastSymbol(tds[k]) != '"' {
+			// разделение по запятым могло разделить данные, заключенные в кавычки
+			if tds[k][0] == '"' && lastSymbol(tds[k]) != '"' && columnsAvailable != len(tds[k]) {
 				// склеиваем строки, пока не найдем ту, которая заканчивается кавычками
-				for t < len(tds) && tds[t][0] != '"' && lastSymbol(tds[t]) == '"' && columnsNum > len(tds)-t {
+				t = k + 1
+				for t < len(tds) && lastSymbol(tds[t]) != '"' && columnsAvailable > len(tds)-t {
 					td += tds[t]
 					t++
 				}
+				td += tds[t]
 			}
-			if t == len(tds) {
+			if t == len(tds) || tds[t][0] == '"' {
 				file.WriteString(tds[k])
 			} else {
 				file.WriteString(td)
+				columnsAvailable -= t
+				k = t
 			}
 			file.WriteString("</td>")
 		}
