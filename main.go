@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -56,36 +57,21 @@ func WriteBody(file *os.File, data []byte) {
 	}
 	file.WriteString("\t</tr>\n")
 
-	columnsNum := len(ths)
-	/*
-		Переменная columnsNum нужна далее для определения валидности склейки строк.
-		Предполагаем, что названия колонок написаны без ошибок и спецсимволов
-	*/
+	re, _ := regexp.Compile(`".+?",|.+?,`)
+
 	for i := 1; i < len(rows)-1; i++ {
-		tds := strings.Split(rows[i], ",")
-		columnsAvailable := columnsNum
+		//tds := strings.Split(rows[i], ",")
+		r := []byte(rows[i])
+		r = append(r, ',')
+		tds := re.FindAll(r, -1)
+		if len(tds) != len(ths) {
+			panic("bad data")
+		}
 		file.WriteString("\t<tr>")
 		for k := 0; k < len(tds); k++ {
-			td := tds[k]
+
 			file.WriteString("<td>")
-			t := 0
-			// разделение по запятым могло разделить данные, заключенные в кавычки
-			if columnsAvailable != len(tds) && tds[k][0] == '"' && lastSymbol(tds[k]) != '"' {
-				// склеиваем строки, пока не найдем ту, которая заканчивается кавычками
-				t = k + 1
-				for t < len(tds) && lastSymbol(tds[t]) != '"' && columnsAvailable > len(tds)-t {
-					td += tds[t]
-					t++
-				}
-				td += tds[t]
-			}
-			if t == len(tds) || tds[t][0] == '"' {
-				file.WriteString(tds[k])
-			} else {
-				file.WriteString(td)
-				columnsAvailable -= t
-				k = t
-			}
+			file.Write(tds[k][:len(tds[k])-1])
 			file.WriteString("</td>")
 		}
 		file.WriteString("</tr>\n")
@@ -94,8 +80,4 @@ func WriteBody(file *os.File, data []byte) {
 	file.WriteString("</table>\n")
 	file.WriteString("</body>\n")
 	file.WriteString("</html>\n")
-}
-
-func lastSymbol(s string) byte {
-	return s[len(s)-1]
 }
