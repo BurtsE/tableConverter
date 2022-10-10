@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	csvFile, errOpen1 := os.Open("testdata.csv")
+	csvFile, errOpen1 := os.Open("data.csv")
 	defer func() {
 		csvFile.Close()
 	}()
@@ -16,21 +16,42 @@ func main() {
 		panic(errOpen1)
 	}
 
-	data, errRead := ioutil.ReadAll(csvFile)
+	csvData, errRead := ioutil.ReadAll(csvFile)
 	if errRead != nil {
 		panic(errRead)
 	}
 
-	htmlFile, errOpen2 := os.OpenFile("output.html", os.O_CREATE|os.O_RDWR, 0777)
+	outCsv, errOpen2 := os.OpenFile("outCsv.html", os.O_CREATE|os.O_RDWR, 0777)
 	defer func() {
-		htmlFile.Close()
+		outCsv.Close()
 	}()
 	if errOpen2 != nil {
 		panic(errOpen2)
 	}
 
-	WriteHtml(htmlFile, data, ".csv")
-	//WriteHtml(htmlFile, data, ".prn")
+	WriteHtml(outCsv, csvData, ".csv")
+
+	prvFile, errOpen3 := os.Open("data.prn")
+	defer func() {
+		prvFile.Close()
+	}()
+	if errOpen3 != nil {
+		panic(errOpen3)
+	}
+
+	prnData, errRead2 := ioutil.ReadAll(prvFile)
+	if errRead != nil {
+		panic(errRead2)
+	}
+
+	outPrn, errOpen4 := os.OpenFile("outPrv.html", os.O_CREATE|os.O_RDWR, 0777)
+	defer func() {
+		outPrn.Close()
+	}()
+	if errOpen4 != nil {
+		panic(errOpen2)
+	}
+	WriteHtml(outPrn, prnData, ".prn")
 }
 
 func WriteHtml(file *os.File, data []byte, doctype string) {
