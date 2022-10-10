@@ -1,6 +1,10 @@
 package main
 
-import "os"
+import (
+	"io/ioutil"
+	"os"
+	"strings"
+)
 
 func main() {
 	csvFile, errOpen1 := os.Open("data.csv")
@@ -11,6 +15,11 @@ func main() {
 		panic(errOpen1)
 	}
 
+	data, errRead := ioutil.ReadAll(csvFile)
+	if errRead != nil {
+		panic(errRead)
+	}
+
 	htmlFile, errOpen2 := os.OpenFile("output.html", os.O_CREATE|os.O_RDWR, 0777)
 	defer func() {
 		htmlFile.Close()
@@ -19,7 +28,7 @@ func main() {
 		panic(errOpen2)
 	}
 	WriteHeader(htmlFile)
-	WriteBody(htmlFile, []byte(""))
+	WriteBody(htmlFile, data)
 }
 
 func WriteHeader(file *os.File) {
@@ -32,7 +41,42 @@ func WriteHeader(file *os.File) {
 }
 
 func WriteBody(file *os.File, data []byte) {
-	file.WriteString("<body>\n")
+	rows := strings.Split(string(data), "\n")
 
+	file.WriteString("<body>\n")
+	file.WriteString("<table border=\"1\">\n")
+
+	ths := strings.Split(rows[0], ",")
+	file.WriteString("\t<tr>")
+	for k := range ths {
+		file.WriteString("<th>")
+		file.WriteString(ths[k])
+		file.WriteString("</th>")
+	}
+	file.WriteString("\t</tr>\n")
+
+	for i := 1; i < len(rows)-1; i++ {
+		tds := strings.Split(rows[i], ",")
+
+		file.WriteString("\t<tr>")
+		for k := 0; k < len(tds); k++ {
+			file.WriteString("<td>")
+			file.WriteString(tds[k])
+			if tds[k][0] == '"' && lastSymbol(tds[k]) != '"' && k+1 < len(tds) &&
+				tds[k+1][0] != '"' && lastSymbol(tds[k+1]) == '"' {
+				file.WriteString(tds[k+1])
+				k++
+			}
+			file.WriteString("</td>")
+		}
+		file.WriteString("</tr>\n")
+	}
+
+	file.WriteString("</table>\n")
 	file.WriteString("</body>\n")
+	file.WriteString("</html>\n")
+}
+
+func lastSymbol(s string) byte {
+	return s[len(s)-1]
 }
