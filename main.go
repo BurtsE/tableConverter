@@ -28,20 +28,27 @@ func main() {
 	if errOpen2 != nil {
 		panic(errOpen2)
 	}
-	WriteHeader(htmlFile)
-	WriteBody(htmlFile, data)
+
+	WriteHtml(htmlFile, data, ".csv")
+	//WriteHtml(htmlFile, data, ".prn")
 }
 
-func WriteHeader(file *os.File) {
+func WriteHtml(file *os.File, data []byte, doctype string) {
+
+	var re *regexp.Regexp
+	switch doctype {
+	case ".csv":
+		re, _ = regexp.Compile(`".+?",|.+?,`)
+	case ".prn":
+		re, _ = regexp.Compile(`.+? +`)
+	}
+
 	file.WriteString(
 		"<!DOCTYPE html>\n<html" +
 			" lang=\"en\">\n<head>\n" +
 			"    <meta charset=\"UTF-8\">\n" +
 			"    <title>Title</title>\n</head>\n",
 	)
-}
-
-func WriteBody(file *os.File, data []byte) {
 	rows := strings.Split(string(data), "\n")
 
 	file.WriteString("<body>\n")
@@ -56,8 +63,6 @@ func WriteBody(file *os.File, data []byte) {
 		file.WriteString("</th>")
 	}
 	file.WriteString("\t</tr>\n")
-
-	re, _ := regexp.Compile(`".+?",|.+?,`)
 
 	for i := 1; i < len(rows)-1; i++ {
 		//tds := strings.Split(rows[i], ",")
