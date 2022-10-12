@@ -69,7 +69,7 @@ func WriteHtml(file *os.File, data []byte, docType string) {
 	case ".prn":
 		re, _ = regexp.Compile(`.+ `)
 		sepSymbol = ' '
-		border = "1"
+		border = "0"
 	default:
 		panic("unknown format")
 	}
@@ -82,6 +82,7 @@ func WriteHtml(file *os.File, data []byte, docType string) {
 		"<style>\n" +
 		"body {\n" +
 		"\twhite-space: pre;\n" +
+		"\tfont-family: Consolas;\n" +
 		"}\n" +
 		"</style>\n" +
 		"<body>\n" +
@@ -92,14 +93,10 @@ func WriteHtml(file *os.File, data []byte, docType string) {
 	for i := 0; i < len(rows)-1; i++ {
 		r := []byte(rows[i])
 
-		qwe, _ := regexp.Compile(`\B `)
-		r = qwe.ReplaceAll(r, []byte("&nbsp;"))
-
 		r = append(r, sepSymbol)
 		tds := re.FindAll(r, -1)
 
 		html += "\t<tr>"
-
 		for k := range tds {
 			html += "<td>" + string(tds[k][:len(tds[k])-1]) + "</td>"
 		}
