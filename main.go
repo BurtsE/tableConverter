@@ -73,7 +73,19 @@ func WriteHtml(file *os.File, data []byte, docType string) {
 	default:
 		panic("unknown format")
 	}
-	html = "<!DOCTYPE html>\n" +
+	html += writeHeader()
+	html += "<body>\n"
+	html += createTable(data, re, sepSymbol, border)
+	html += "</body>\n" + "</html>\n"
+
+	_, err := file.WriteString(html)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func writeHeader() string {
+	return "<!DOCTYPE html>\n" +
 		"<html lang=\"en\">\n" +
 		"<head>\n" +
 		"    <meta charset=\"UTF-8\">\n" +
@@ -84,27 +96,28 @@ func WriteHtml(file *os.File, data []byte, docType string) {
 		"\twhite-space: pre;\n" +
 		"\tfont-family: Consolas;\n" +
 		"}\n" +
-		"</style>\n" +
-		"<body>\n" +
-		fmt.Sprintf("<table border=\"%s\">\n", border)
+		"</style>\n"
+}
 
+func createTable(data []byte, re *regexp.Regexp, sepSymbol byte, border string) (html string) {
+	html += fmt.Sprintf("<table border=\"%s\">\n", border)
 	rows := strings.Split(string(data), "\n")
-
 	for i := 0; i < len(rows)-1; i++ {
-		r := []byte(rows[i])
+		row := []byte(rows[i])
 
-		r = append(r, sepSymbol)
-		tds := re.FindAll(r, -1)
+		row = append(row, sepSymbol)
+		tds := re.FindAll(row, -1)
 
 		html += "\t<tr>"
 		for k := range tds {
-			html += "<td>" + string(tds[k][:len(tds[k])-1]) + "</td>"
+			html += createTableCell(tds[k][:len(tds[k])-1])
 		}
 		html += "</tr>\n"
 	}
-	html += "</table>\n" +
-		"</body>\n" +
-		"</html>\n"
+	html += "</table>\n"
+	return
+}
 
-	file.WriteString(html)
+func createTableCell(data []byte) string {
+	return "<td>" + string(data) + "</td>"
 }
