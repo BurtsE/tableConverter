@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -31,79 +32,82 @@ func main() {
 
 	WriteHtml(outCsv, csvData, ".csv")
 
-	prvFile, errOpen3 := os.Open("data.prn")
+	prnFile, errOpen3 := os.Open("data.prn")
 	defer func() {
-		prvFile.Close()
+		prnFile.Close()
 	}()
 	if errOpen3 != nil {
 		panic(errOpen3)
 	}
 
-	prnData, errRead2 := ioutil.ReadAll(prvFile)
-	if errRead != nil {
+	prnData, errRead2 := ioutil.ReadAll(prnFile)
+	if errRead2 != nil {
 		panic(errRead2)
 	}
 
-	outPrn, errOpen4 := os.OpenFile("outPrv.html", os.O_CREATE|os.O_RDWR, 0777)
+	outPrn, errOpen4 := os.OpenFile("outPrn.html", os.O_CREATE|os.O_RDWR, 0777)
 	defer func() {
 		outPrn.Close()
 	}()
 	if errOpen4 != nil {
-		panic(errOpen2)
+		panic(errOpen4)
 	}
 	WriteHtml(outPrn, prnData, ".prn")
 }
 
-func WriteHtml(file *os.File, data []byte, doctype string) {
+func WriteHtml(file *os.File, data []byte, docType string) {
 
 	var re *regexp.Regexp
-	switch doctype {
+	var sepSymbol byte
+	var border string
+	var html string
+	switch docType {
 	case ".csv":
 		re, _ = regexp.Compile(`".+?",|.+?,`)
+		sepSymbol = ','
+		border = "1"
 	case ".prn":
-		re, _ = regexp.Compile(`.+? +`)
+		re, _ = regexp.Compile(`.+ `)
+		sepSymbol = ' '
+		border = "1"
+	default:
+		panic("unknown format")
 	}
+	html = "<!DOCTYPE html>\n" +
+		"<html lang=\"en\">\n" +
+		"<head>\n" +
+		"    <meta charset=\"UTF-8\">\n" +
+		"    <title>Title</title>\n" +
+		"</head>\n" +
+		"<style>\n" +
+		"body {\n" +
+		"\twhite-space: pre;\n" +
+		"}\n" +
+		"</style>\n" +
+		"<body>\n" +
+		fmt.Sprintf("<table border=\"%s\">\n", border)
 
-	file.WriteString(
-		"<!DOCTYPE html>\n<html" +
-			" lang=\"en\">\n<head>\n" +
-			"    <meta charset=\"UTF-8\">\n" +
-			"    <title>Title</title>\n</head>\n",
-	)
 	rows := strings.Split(string(data), "\n")
 
-	file.WriteString("<body>\n")
-	file.WriteString("<table border=\"1\">\n")
-
-	ths := strings.Split(rows[0], ",")
-
-	file.WriteString("\t<tr>")
-	for k := range ths {
-		file.WriteString("<th>")
-		file.WriteString(ths[k])
-		file.WriteString("</th>")
-	}
-	file.WriteString("\t</tr>\n")
-
-	for i := 1; i < len(rows)-1; i++ {
-		//tds := strings.Split(rows[i], ",")
+	for i := 0; i < len(rows)-1; i++ {
 		r := []byte(rows[i])
-		r = append(r, ',')
+
+		qwe, _ := regexp.Compile(`\B `)
+		r = qwe.ReplaceAll(r, []byte("&nbsp;"))
+
+		r = append(r, sepSymbol)
 		tds := re.FindAll(r, -1)
-		if len(tds) != len(ths) {
-			panic("bad data")
-		}
-		file.WriteString("\t<tr>")
-		for k := 0; k < len(tds); k++ {
 
-			file.WriteString("<td>")
-			file.Write(tds[k][:len(tds[k])-1])
-			file.WriteString("</td>")
+		html += "\t<tr>"
+
+		for k := range tds {
+			html += "<td>" + string(tds[k][:len(tds[k])-1]) + "</td>"
 		}
-		file.WriteString("</tr>\n")
+		html += "</tr>\n"
 	}
+	html += "</table>\n" +
+		"</body>\n" +
+		"</html>\n"
 
-	file.WriteString("</table>\n")
-	file.WriteString("</body>\n")
-	file.WriteString("</html>\n")
+	file.WriteString(html)
 }
