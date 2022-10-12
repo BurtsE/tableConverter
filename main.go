@@ -22,7 +22,7 @@ func main() {
 		panic(errRead)
 	}
 
-	outCsv, errOpen2 := os.OpenFile("outCsv.html", os.O_CREATE|os.O_RDWR, 0777)
+	outCsv, errOpen2 := os.OpenFile("outCsv.html", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0777)
 	defer func() {
 		outCsv.Close()
 	}()
@@ -57,25 +57,22 @@ func main() {
 
 func WriteHtml(file *os.File, data []byte, docType string) {
 
-	var re *regexp.Regexp
-	var sepSymbol byte
 	var border string
 	var html string
+	var table [][][]byte
 	switch docType {
 	case ".csv":
-		re, _ = regexp.Compile(`".+?",|.+?,`)
-		sepSymbol = ','
+		table = parseCsv(data)
 		border = "1"
 	case ".prn":
-		re, _ = regexp.Compile(`.+ `)
-		sepSymbol = ' '
+		table = parsePrn(data)
 		border = "0"
 	default:
 		panic("unknown format")
 	}
 	html += writeHeader()
 	html += "<body>\n"
-	html += createTable(data, re, sepSymbol, border)
+	html += createTable(table, border)
 	html += "</body>\n" + "</html>\n"
 
 	_, err := file.WriteString(html)
@@ -99,15 +96,10 @@ func writeHeader() string {
 		"</style>\n"
 }
 
-func createTable(data []byte, re *regexp.Regexp, sepSymbol byte, border string) (html string) {
+func createTable(data [][][]byte, border string) (html string) {
 	html += fmt.Sprintf("<table border=\"%s\">\n", border)
-	rows := strings.Split(string(data), "\n")
-	for i := 0; i < len(rows)-1; i++ {
-		row := []byte(rows[i])
-
-		row = append(row, sepSymbol)
-		tds := re.FindAll(row, -1)
-
+	for i := 0; i < len(data); i++ {
+		tds := data[i]
 		html += "\t<tr>"
 		for k := range tds {
 			html += createTableCell(tds[k][:len(tds[k])-1])
@@ -120,4 +112,32 @@ func createTable(data []byte, re *regexp.Regexp, sepSymbol byte, border string) 
 
 func createTableCell(data []byte) string {
 	return "<td>" + string(data) + "</td>"
+}
+
+func parseCsv(data []byte) (parsedData [][][]byte) {
+	var sepSymbol byte = ','
+	re, _ := regexp.Compile(`".+?",|.+?,`)
+	rows := strings.Split(string(data), "\n")
+
+	for i := 0; i < len(rows)-1; i++ {
+		row := []byte(rows[i])
+		row = append(row, sepSymbol)
+		tds := re.FindAll(row, -1)
+		parsedData = append(parsedData, tds)
+	}
+	return
+}
+
+func parsePrn(data []byte) (parsedData [][][]byte) {
+	var sepSymbol byte = ','
+	re, _ := regexp.Compile(`.+ `)
+	rows := strings.Split(string(data), "\n")
+
+	for i := 0; i < len(rows)-1; i++ {
+		row := []byte(rows[i])
+		row = append(row, sepSymbol)
+		tds := re.FindAll(row, -1)
+		parsedData = append(parsedData, tds)
+	}
+	return
 }
