@@ -119,6 +119,20 @@ func parseCsv(data []byte) (parsedData [][][]byte) {
 	re, _ := regexp.Compile(`".+?",|.+?,`)
 	rows := strings.Split(string(data), "\n")
 
+	for i := range rows {
+		row := []byte(rows[i])
+		row = append(row, sepSymbol)
+		tds := re.FindAll(row, -1)
+		parsedData = append(parsedData, tds)
+	}
+	return
+}
+
+func parsePrnSimple(data []byte) (parsedData [][][]byte) {
+	var sepSymbol byte = ' '
+	re, _ := regexp.Compile(`.+ `)
+	rows := strings.Split(string(data), "\n")
+
 	for i := 0; i < len(rows)-1; i++ {
 		row := []byte(rows[i])
 		row = append(row, sepSymbol)
@@ -129,15 +143,22 @@ func parseCsv(data []byte) (parsedData [][][]byte) {
 }
 
 func parsePrn(data []byte) (parsedData [][][]byte) {
-	var sepSymbol byte = ','
+
+	var sepSymbol byte = ' '
 	re, _ := regexp.Compile(`.+ `)
 	rows := strings.Split(string(data), "\n")
 
+	columnLen := []int{16, 22, 9, 15, 12, 9}
 	for i := 0; i < len(rows)-1; i++ {
-		row := []byte(rows[i])
-		row = append(row, sepSymbol)
-		tds := re.FindAll(row, -1)
-		parsedData = append(parsedData, tds)
+		var tRow [][]byte
+		var startPos, endPos int
+		row := string(append([]byte(rows[i]), sepSymbol))
+		for k := 0; k < len(columnLen); k++ {
+			endPos += columnLen[k]
+			tRow = append(tRow, []byte(re.FindString(row[startPos:endPos])))
+			startPos += columnLen[k]
+		}
+		parsedData = append(parsedData, tRow)
 	}
 	return
 }
