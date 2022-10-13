@@ -143,22 +143,40 @@ func parsePrnSimple(data []byte) (parsedData [][][]byte) {
 }
 
 func parsePrn(data []byte) (parsedData [][][]byte) {
-
+	columnLen := []int{16, 22, 9, 15, 12, 9}
+	/*
+		Предполагается, что ширина колонок с данными известна
+		В противном случае логическое деление столбцов не представляется возможным
+		Более универсальный метод parsePrnSimple дает такое же графическое представление, но данные объединены
+		в единый столбец таблицы
+	*/
 	var sepSymbol byte = ' '
 	re, _ := regexp.Compile(`.+ `)
 	rows := strings.Split(string(data), "\n")
 
-	columnLen := []int{16, 22, 9, 15, 12, 9}
 	for i := 0; i < len(rows)-1; i++ {
 		var tRow [][]byte
 		var startPos, endPos int
 		row := string(append([]byte(rows[i]), sepSymbol))
 		for k := 0; k < len(columnLen); k++ {
 			endPos += columnLen[k]
-			tRow = append(tRow, []byte(re.FindString(row[startPos:endPos])))
+			tRow = append(tRow, []byte(re.FindString(sepTd(row, startPos, endPos))))
 			startPos += columnLen[k]
 		}
 		parsedData = append(parsedData, tRow)
+	}
+	return
+}
+
+func sepTd(str string, start, end int) (cellData string) {
+	/*
+		Метод parsePrn использует ширину строки в символах, эта функция нужна для правильного
+		деления данных в случае, если данные представлены не в ASCII (range итерируется по рунам)
+	*/
+	for i, symbol := range str {
+		if i >= start && i < end {
+			cellData += string(symbol)
+		}
 	}
 	return
 }
