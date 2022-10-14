@@ -107,7 +107,7 @@ func CreateTable(data [][][]byte, border string) (html string) {
 		tds := data[i]
 		html += "\t<tr>"
 		for k := range tds {
-			html += CreateTableCell(tds[k][:len(tds[k])-1])
+			html += CreateTableCell(tds[k])
 		}
 		html += "</tr>\n"
 	}
@@ -131,6 +131,9 @@ func ParseCsv(data []byte) (parsedData [][][]byte) {
 		row := []byte(rows[i])
 		row = append(row, sepSymbol)
 		tds := re.FindAll(row, -1)
+		for k := range tds {
+			tds[k] = tds[k][:len(tds[k])-1]
+		}
 		parsedData = append(parsedData, tds)
 	}
 	return
