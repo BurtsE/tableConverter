@@ -32,7 +32,7 @@ func TestSepId(t *testing.T) {
 	}
 }
 
-// TestParseCsv Выполняет проверку отсутствия пустых полей после парсинга, а
+// TestParsePrn Выполняет проверку отсутствия пустых полей после парсинга, а
 // также проводится проверка то, были ли данные изменены в процессе парсинга
 func TestParsePrn(t *testing.T) {
 	var backupData []byte
@@ -68,10 +68,11 @@ func TestParsePrn(t *testing.T) {
 	}
 }
 
+// TestParseCsv проверяет правильность парсинга csv-файла
 func TestParseCsv(t *testing.T) {
 	testData := []byte("\"Jack\",\"Via Rocco Chinnici 4d\",3423 ba,0313-111475,22,05/04/1984\n" +
 		"\"Charlie\",\"Via Aldo Moro, 7\",3209 DD,30-34563332,343.8,04/10/1954")
-
+	t.Logf("Parsing initiated")
 	result := ParseCsv(testData)
 
 	expectedResult := []string{"\"Jack\"", "\"Via Rocco Chinnici 4d\"", "3423 ba", "0313-111475", "22", "05/04/1984",
