@@ -55,24 +55,24 @@ func main() {
 	WriteHtml(outPrn, prnData, ".prn")
 }
 
+// WriteHtml выполняет запись данных  в указанный файл
 func WriteHtml(file *os.File, data []byte, docType string) {
-
 	var border string
 	var html string
 	var table [][][]byte
 	switch docType {
 	case ".csv":
-		table = parseCsv(data)
+		table = ParseCsv(data)
 		border = "1"
 	case ".prn":
-		table = parsePrn(data)
+		table = ParsePrn(data)
 		border = "0"
 	default:
 		panic("unknown format")
 	}
-	html += writeHeader()
+	html += WriteHeader()
 	html += "<body>\n"
-	html += createTable(table, border)
+	html += CreateTable(table, border)
 	html += "</body>\n" + "</html>\n"
 
 	_, err := file.WriteString(html)
@@ -81,7 +81,8 @@ func WriteHtml(file *os.File, data []byte, docType string) {
 	}
 }
 
-func writeHeader() string {
+// WriteHeader генерирует заголовок html файла
+func WriteHeader() string {
 	return "<!DOCTYPE html>\n" +
 		"<html lang=\"en\">\n" +
 		"<head>\n" +
@@ -96,13 +97,14 @@ func writeHeader() string {
 		"</style>\n"
 }
 
-func createTable(data [][][]byte, border string) (html string) {
+// CreateTable генерирует html код таблицы
+func CreateTable(data [][][]byte, border string) (html string) {
 	html += fmt.Sprintf("<table border=\"%s\">\n", border)
 	for i := 0; i < len(data); i++ {
 		tds := data[i]
 		html += "\t<tr>"
 		for k := range tds {
-			html += createTableCell(tds[k][:len(tds[k])-1])
+			html += CreateTableCell(tds[k][:len(tds[k])-1])
 		}
 		html += "</tr>\n"
 	}
@@ -110,11 +112,14 @@ func createTable(data [][][]byte, border string) (html string) {
 	return
 }
 
-func createTableCell(data []byte) string {
+// CreateTableCell создает клетки таблицы в формате html
+func CreateTableCell(data []byte) string {
 	return "<td>" + string(data) + "</td>"
 }
 
-func parseCsv(data []byte) (parsedData [][][]byte) {
+// ParseCsv представляет данные, полученные из csv файла
+// в виде двумерного массива слов (срезов байт)
+func ParseCsv(data []byte) (parsedData [][][]byte) {
 	var sepSymbol byte = ','
 	re, _ := regexp.Compile(`".+?",|.+?,`)
 	rows := strings.Split(string(data), "\n")
@@ -128,7 +133,10 @@ func parseCsv(data []byte) (parsedData [][][]byte) {
 	return
 }
 
-func parsePrnSimple(data []byte) (parsedData [][][]byte) {
+// ParsePrnSimple представляет данные, полученные из prn файла
+// в виде двумерного массива слов (срезов байт).
+// Словом будет являться вся строка, в табличном представлении будет единственный столбец
+func ParsePrnSimple(data []byte) (parsedData [][][]byte) {
 	var sepSymbol byte = ' '
 	re, _ := regexp.Compile(`.+ `)
 	rows := strings.Split(string(data), "\n")
@@ -142,14 +150,14 @@ func parsePrnSimple(data []byte) (parsedData [][][]byte) {
 	return
 }
 
-func parsePrn(data []byte) (parsedData [][][]byte) {
+// ParsePrn представляет данные, полученные из prn файла
+// в виде двумерного массива слов (срезов байт).
+// Предполагается, что ширина колонок с данными (как и их количество) известна
+// В противном случае логическое деление столбцов не представляется возможным
+// Более универсальный метод parsePrnSimple дает такое же графическое представление, но данные объединены
+// в единый столбец таблицы
+func ParsePrn(data []byte) (parsedData [][][]byte) {
 	columnLen := []int{16, 22, 9, 15, 12, 9}
-	/*
-		Предполагается, что ширина колонок с данными известна
-		В противном случае логическое деление столбцов не представляется возможным
-		Более универсальный метод parsePrnSimple дает такое же графическое представление, но данные объединены
-		в единый столбец таблицы
-	*/
 	var sepSymbol byte = ' '
 	re, _ := regexp.Compile(`.+ `)
 	rows := strings.Split(string(data), "\n")
@@ -160,7 +168,7 @@ func parsePrn(data []byte) (parsedData [][][]byte) {
 		row := string(append([]byte(rows[i]), sepSymbol))
 		for k := 0; k < len(columnLen); k++ {
 			endPos += columnLen[k]
-			tRow = append(tRow, []byte(re.FindString(sepTd(row, startPos, endPos))))
+			tRow = append(tRow, []byte(re.FindString(SepTd(row, startPos, endPos))))
 			startPos += columnLen[k]
 		}
 		parsedData = append(parsedData, tRow)
@@ -168,15 +176,17 @@ func parsePrn(data []byte) (parsedData [][][]byte) {
 	return
 }
 
-func sepTd(str string, start, end int) (cellData string) {
-	/*
-		Метод parsePrn использует ширину строки в символах, эта функция нужна для правильного
-		деления данных в случае, если данные представлены не в ASCII (range итерируется по рунам)
-	*/
-	for i, symbol := range str {
+//	SepTd нужна для правильного деления данных в случае, если данные
+//	представлены не в ASCII (range итерируется по рунам), т.к. функция ParsePrn
+//  использует ширину строки в символах
+func SepTd(str string, start, end int) (cellData string) {
+	var i int
+	for _, symbol := range str {
+		fmt.Println(i)
 		if i >= start && i < end {
 			cellData += string(symbol)
 		}
+		i++
 	}
 	return
 }
