@@ -8,8 +8,11 @@ import (
 	"strings"
 )
 
+//Константа для парсинга prn файла
+var columnLen = [6]int{16, 22, 9, 15, 12, 9}
+
 func main() {
-	csvFile, errOpen1 := os.Open("data.csv")
+	csvFile, errOpen1 := os.Open("data/data.csv")
 	defer func() {
 		csvFile.Close()
 	}()
@@ -22,7 +25,7 @@ func main() {
 		panic(errRead)
 	}
 
-	outCsv, errOpen2 := os.OpenFile("outCsv.html", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0777)
+	outCsv, errOpen2 := os.OpenFile("output/outCsv.html", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0777)
 	defer func() {
 		outCsv.Close()
 	}()
@@ -32,7 +35,7 @@ func main() {
 
 	WriteHtml(outCsv, csvData, ".csv")
 
-	prnFile, errOpen3 := os.Open("data.prn")
+	prnFile, errOpen3 := os.Open("data/data.prn")
 	defer func() {
 		prnFile.Close()
 	}()
@@ -45,7 +48,7 @@ func main() {
 		panic(errRead2)
 	}
 
-	outPrn, errOpen4 := os.OpenFile("outPrn.html", os.O_CREATE|os.O_RDWR, 0777)
+	outPrn, errOpen4 := os.OpenFile("output/outPrn.html", os.O_CREATE|os.O_RDWR, 0777)
 	defer func() {
 		outPrn.Close()
 	}()
@@ -157,7 +160,7 @@ func ParsePrnSimple(data []byte) (parsedData [][][]byte) {
 // Более универсальный метод parsePrnSimple дает такое же графическое представление, но данные объединены
 // в единый столбец таблицы
 func ParsePrn(data []byte) (parsedData [][][]byte) {
-	columnLen := []int{16, 22, 9, 15, 12, 9}
+	//columnLen := []int{16, 22, 9, 15, 12, 9}
 	var sepSymbol byte = ' '
 	re, _ := regexp.Compile(`.+ `)
 	rows := strings.Split(string(data), "\n")
@@ -182,7 +185,6 @@ func ParsePrn(data []byte) (parsedData [][][]byte) {
 func SepTd(str string, start, end int) (cellData string) {
 	var i int
 	for _, symbol := range str {
-		fmt.Println(i)
 		if i >= start && i < end {
 			cellData += string(symbol)
 		}
